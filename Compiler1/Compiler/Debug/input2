@@ -1,0 +1,8 @@
+Define ObjectType Obj1
+int8 hu;
+Function fun1()
+{
+int8 h;
+h=6;
+}
+EndDefine

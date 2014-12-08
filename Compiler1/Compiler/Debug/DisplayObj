@@ -1,0 +1,93 @@
+Define ObjectType Display
+int16 m_iCursorPos;
+Function init()
+{
+m_iCursorPos=0;
+}
+Function PrintInteger(int32 intValue)
+{
+%LockRegister(ECX);
+%LockRegister(EDX);
+%LockRegister(EDI);
+%LockRegister(ESI);
+_asm{
+mov ax,0xB800
+mov gs,ax
+mov  edi,0x0
+mov  di,@m_iCursorPos
+mov eax,@intValue
+mov ecx,1000000000
+mov edx,0x0
+cmp eax,0x7FFFFFFF
+jb conv_loop
+mov byte [gs:edi],'-'
+add edi,0x2
+neg eax
+conv_loop:
+cmp eax,0x0
+je divAndPrint
+cmp  eax,ecx
+jge divAndPrint
+idiv  ecx
+jmp skip_print
+divAndPrint:idiv  ecx
+add al,48
+mov byte [gs:edi],al
+add edi,0x2
+skip_print:mov esi,edx
+mov eax,ecx
+mov edx,0x0
+mov  ecx,10
+div ecx
+cmp eax,0x0
+jz stop
+mov ecx,eax
+mov eax,esi
+mov edx,0x0
+jmp conv_loop
+stop:
+mov eax,esi
+mov byte [gs:edi],al
+add edi,0x2
+mov @m_iCursorPos,di
+}
+%UnLockRegister(ECX);
+%UnLockRegister(EDX);
+%UnLockRegister(EDI);
+%UnLockRegister(ESI);
+}
+Function PrintString(String strValue)
+{
+int16 strLen;
+Pointer strAddr;
+strAddr=strValue.m_szStringData;
+if(strAddr==0) Then
+return;
+EndIf
+strLen=strValue.m_iLength;
+%LockRegister(ESI);
+%LockRegister(EDI);
+%LockRegister(ECX);
+_asm{
+xor ecx,ecx
+mov ax,0xB800
+mov gs,ax
+mov  edi,0x0
+mov  di,@m_iCursorPos
+mov cx,@strLen
+mov esi,@strAddr
+.print_loop: 
+mov byte  al,[esi]
+mov byte [gs:edi],al
+add edi,0x2
+inc esi
+LOOP .print_loop
+add edi,0x2
+mov @m_iCursorPos,di
+}
+%UnLockRegister(ESI);
+%UnLockRegister(EDI);
+%UnLockRegister(ECX);
+}
+EndDefine
+Display displayObject;

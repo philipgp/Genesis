@@ -1,0 +1,10 @@
+Define ObjectType Obj1
+Function start()
+{
+int8 j;
+j=7;
+int16 m;
+m=j;
+fprint_int_win(m);
+}
+EndDefine

@@ -1,0 +1,9 @@
+global printc
+printc:pusha
+mov byte al,0x64
+mov cx,0x01
+mov ah,0x09 
+mov bh,0x00 
+mov bl,0x07
+int 0x10
+ popa

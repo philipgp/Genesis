@@ -1,0 +1,62 @@
+Define ObjectType heapobj
+Pointer m_LpStart;
+int8 HEADERSIZE;
+Function init()
+{
+
+struct SHeapBlock
+{
+int16 m_iSize;
+Pointer m_LpNext;
+}
+SHeapBlock StartBlock;
+int16 iSize;
+HEADERSIZE=6;
+Pointer LpStart;
+_asm{
+mov EDX,heap
+mov @LpStart,EDX
+}
+StartBlock.m_iSize=100;
+StartBlock.m_LpNext=0;
+@(SHeapBlock)LpStart=StartBlock;
+m_LpStart=LpStart;
+
+}
+Function AllocateMemory(int16 requiredSize) returns Pointer
+{
+Pointer LpStart,LpCurrent,LpAddress;
+SHeapBlock CurrentBlock;
+int16 iSize;
+iSize=0;
+LpAddress=0;
+LpCurrent=m_LpStart;
+while(LpCurrent!=0)
+Loop
+CurrentBlock=@(SHeapBlock)LpCurrent;
+iSize=CurrentBlock.m_iSize;
+if(iSize > requiredSize) Then
+Break; 
+EndIf
+LpCurrent=CurrentBlock.m_LpNext;
+EndLoop
+if(LpCurrent!=0) Then
+int32 offset;
+offset=iSize+HEADERSIZE-requiredSize;
+LpAddress=LpCurrent+offset;
+CurrentBlock.m_iSize=iSize-requiredSize;
+@(SHeapBlock)LpCurrent=CurrentBlock;
+Endif
+iSize=0;
+return LpAddress;
+}
+Function FreeMemory(Pointer p,int16 iSize)
+{
+SHeapBlock currentBlock;
+currentBlock.m_iSize=iSize-HEADERSIZE;
+currentBlock.m_LpNext=m_LpStart;
+@(SHeapBlock)p=currentBlock;
+m_LpStart=p;
+}
+EndDefine
+heapobj heap;

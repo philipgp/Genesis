@@ -1,0 +1,7 @@
+;mov al,0x61
+mov ah,0x0e
+int 0x10
+times 510-($-$$) db 0
+db 0x55
+db 0xAA
+times 1024-($-$$) db 0

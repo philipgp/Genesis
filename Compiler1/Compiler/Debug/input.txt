@@ -1,0 +1,28 @@
+Define Datatype address{
+int8 mem1,mem2;
+int8 mem4;
+Operation addition(int8 op1,Operator +) Returns int8
+{
+int8 i;/*8bitinteger*/
+int8 j;
+j=2;
+i=60;
+i=i*j;
+}
+
+}
+Define Worker Worker1
+Task start()
+{
+
+
+int8 i;/*8bitinteger*/
+int8 j;
+j=2;
+i=60;
+i=i*j;
+address ad;
+ad.mem1=20;
+print_int_win(ad.mem1);
+}
+EndDefine

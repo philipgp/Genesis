@@ -1,0 +1,15 @@
+struct record
+{
+int8 i,j;
+}
+Define ObjectType Obj1
+Function start()
+{
+
+record st1,st2;
+st1.i=8;
+st1.j=18;
+st2.i=st1.i;
+fprint_int_win(st2.i);
+}
+EndDefine

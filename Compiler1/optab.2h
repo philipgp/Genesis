@@ -1,0 +1,590 @@
+#ifndef OPTAB_H
+#define OPTAB_H 
+#define LEN 30
+#define SIZE 30
+#define OperatorTabLen 24
+#include<string.h>
+  struct optab
+    {
+    int Result,Operator,Operand1,Operand2,SubscriptIndex,ArrayIndex;
+    char Result_c[10],Operator_c[16],Operand1_c[16],Operand2_c[16];
+    char *PlainInstr,Label[20],TargetLabel[20],*AsmPointer;
+    struct optab *previous,*next,*subscript,*instr_addr;
+    }; 
+  typedef struct optab Optab;
+int Block_Number=0;
+int LabelCount=0;
+Optab *prog_start=NULL,*current,*previous=NULL,*block_start=NULL,*ID_Node_Current=NULL,*ID_Node_Start=NULL,*ID_Node_Previous=NULL,*Last_Statement_Block;
+    int nOperation;
+ char OperatorTab[SIZE][LEN]={{"+"},{"-"},{"*"},{"/"},{"="},{"||"},{"&&"},{"^"},{"<="},{">="},{"=="},{"!="},{"<"},{">"},{"JLT_JNXT"},{"JLT"},{"JMP"},{"JMP_JNXT"},{"BRK_LOOP"},{"PUSH_FUN_PAR"},{"CALL"},{"CONT_LOOP"},{"ASM"},{"DEREFERENCE"}};
+  
+  extern char * GetSymbolName(int);
+  
+  Optab * MakeSimpleNode();
+  Optab* GenerateTempVariable();
+  void SetDataType(int,int);
+  Optab * GetDimension(int);
+  void SetDimension(int,struct Optab *);
+  void SetStorage(int,int);
+void AddDataType(char * LpszDataTypeName,int iDataTypeSize,Optab *LpMembers);
+   char * GenerateTempLabel()
+     {
+     char no[10];
+     char Temp[LEN];
+     itoa(LabelCount,no,10);
+     strcpy(Temp,"LABEL");
+     strcat(Temp,no);
+     LabelCount++;
+     return Temp;
+     }
+   char * GetOperatorName(int OPERATORID)
+    {
+    return OperatorTab[OPERATORID];
+    }
+
+   Optab *MakeStructDeclaration(int iStructNameID, Optab *Members)
+       {
+       int iDataTypeSize;
+       iDataTypeSize=CalculateDataTypeSize(Members);
+       AddDataType(GetSymbolName(iStructNameID),iDataTypeSize,Members);
+       return NULL;
+       }
+  Optab * MakeNode(int data)
+       {
+       Optab* ID_Node;
+       ID_Node=MakeSimpleNode();
+//       char * SymName=GetSymName(data);
+       strcpy(ID_Node->Result_c,GetSymbolName(data));
+       ID_Node->Result=data;
+       
+       /*if(ID_Node_Start==NULL)
+           ID_Node_Start=ID_Node;
+       if(ID_Node_Previous!=NULL)
+           ID_Node_Previous->next=ID_Node;
+       ID_Node_Previous=ID_Node;
+       return ID_Node;
+*/
+      }
+  void InitNewBlock()
+      {
+      /*OptabStackCurrent=(struct OPTAB_STACK *)malloc(sizeof(OPTAB_STACK));
+      if(OptabStackStart==NULL)
+          OptabStackStart=OptabStackCurrent;
+      if(OptabStackPrevious!=NULL)
+          OptabStackPrevious->next=OptabStackCurrent;
+      if(OptabStackCurrent!=OptabStackStart)
+      OptabStackCurrent->previous=OptabStackPrevious;
+      else
+          OptabStackCurrent->previous=NULL;
+      OptabStackPrevious=OptabStackCurrent;
+      OptabStackCurrent->Addr=block_start;*/
+      Block_Number++;
+      block_start=NULL;
+      }
+  void TermOldBlock()
+      {
+      Block_Number--;
+      /*if(OptabStackCurrent==NULL)
+          return;
+      OptabStackPrevious=OptabStackPrevious->previous;
+      if(OptabStackCurrent==OptabStackStart)
+          {OptabStackStart=NULL;
+      OptabStackPrevious=NULL;
+          }
+      else
+          {
+          OptabStackPrevious->next=NULL;
+          }
+      free(OptabStackCurrent);
+      OptabStackCurrent=OptabStackPrevious;
+      block_start=OptabStackCurrent;*/
+      }
+
+  Optab* MakeDeclareIDSubscript(Optab* Identifier,Optab* Subscript)
+      {
+      Identifier->subscript=Subscript;
+      return Identifier;
+      }
+  int IsPointer(Optab * LpCurrent)
+      {
+      char * LpszSymName=GetSymbolName(LpCurrent->Result);
+      if(LpszSymName[0]=='@')
+          return 1;
+      else
+      return 0;
+      }
+  
+  Optab* MakeDeclareStatement(int Datatype,Optab* ID_List)
+      {
+      Optab *Current,*Start;
+      Current=Start=ID_List;
+      while(1)
+          {
+          if(DataTypeIsStruct(Datatype))
+              {
+              if(IsPointer(Current))
+                  {
+                  SetDataType(Current->Result,Datatype);
+                  SetStorage(Current->Result,1);
+                  }
+              else
+                  {
+                  SetDataType(Current->Result,Datatype);
+                  SetStorage(Current->Result,2);
+              
+                  }
+              }
+          else if(IsPointer(Current))
+              {
+              SetDataType(Current->Result,Datatype);
+              SetStorage(Current->Result,1);
+              }
+          else
+              {
+              SetDataType(Current->Result,Datatype);
+              SetStorage(Current->Result,0);
+              }
+
+          
+          if(Current->subscript!=NULL)
+              {
+              
+              SetDimension(Current->Result,Current->subscript);
+              }
+          Current=Current->next;
+          if(Current==Start)
+                break;
+          }
+      return ID_List;
+      }
+
+Optab* MakeFunctionDeclaration(int RtrnDataType,int FunctionNameSymTabPos,Optab * ParamList,Optab *StatementBlock)
+    {
+    AddFunctionTable(RtrnDataType,GetSymbolName(FunctionNameSymTabPos),ParamList);
+
+    }
+  Optab* MakeSimpleNode()
+      {
+      current=(Optab *)malloc(sizeof(struct optab));
+      current->instr_addr=NULL;
+      current->Result=-1;
+      current->Operator=-1;
+      current->Operand1=-1;
+      current->Operand2=-1;
+      current->Label[0]='\0';
+      current->Result_c[0]='\0';
+      current->Operand1_c[0]='\0';
+      current->Operand2_c[0]='\0';
+      current->Operator_c[0]='\0';
+      current->TargetLabel[0]='\0';
+      current->AsmPointer=NULL;
+      current->subscript=NULL;
+      current->SubscriptIndex=-1;
+      current->ArrayIndex=-1;
+      current->next=current;
+      current->previous=current;
+      return current;
+      }
+  Optab * DeleteNode( Optab * Node)
+      {
+      
+      Optab* Previous,*Next;
+      Previous=Node->previous;
+      if(Previous==Node)
+          {
+          prog_start=NULL;
+          return NULL;
+          }
+      
+      Next=Node->next;
+      if(Node==prog_start)
+          prog_start=Next;
+      Previous->next=Next;
+      Next->previous=Previous;
+      return Previous;
+      }
+  void BackPatch(Optab * Current,Optab* PatchAddr)
+     {
+     Optab* Start=Current;
+     while(1)
+         {
+         if((Current->Operator==GetOperatorId("JMP_JNXT"))&&(strlen(Current->TargetLabel)==0))
+             {
+             Current->instr_addr=PatchAddr;
+             }
+         else if((Current->Operator==GetOperatorId("BRK_L"))&&(strlen(Current->TargetLabel)==0))
+             {
+             Current->Operator=GetOperatorId("JMP_JNXT");
+             strcpy(Current->Operator_c,GetOperatorName(Current->Operator));
+             Current->instr_addr=PatchAddr;
+             }
+         Current=Current->next;
+         if(Current==Start)
+             break;
+         }
+     }
+  void BackPatchWhileLoop(Optab * Current,Optab* BreakPatchAddr,Optab * ContinuePatchAddress)
+     {
+      Optab* Start=Current;
+     while(1)
+         {
+         
+         if((Current->Operator==GetOperatorId("BRK_LOOP"))&&(strlen(Current->TargetLabel)==0))
+             {
+             Current->Operator=GetOperatorId("JMP_JNXT");
+             strcpy(Current->Operator_c,GetOperatorName(Current->Operator));
+             Current->instr_addr=BreakPatchAddr;
+             }
+         else if((Current->Operator==GetOperatorId("CONT_LOOP"))&&(strlen(Current->TargetLabel)==0))
+             {
+             Current->Operator=GetOperatorId("JMP");
+             strcpy(Current->Operator_c,GetOperatorName(Current->Operator));
+             Current->instr_addr=ContinuePatchAddress;
+             }
+         Current=Current->next;
+         if(Current==Start)
+             break;
+         }
+     }
+  Optab * ConcatSubscriptNode(Optab *Node1,Optab * Node2)
+      {
+      Optab* Node1_Last,*Node2_Last;
+      Node1_Last=Node1->previous;
+      Node2_Last=Node2->previous;
+      Node1_Last->next=Node2;
+      Node2->previous=Node1_Last;
+      Node2_Last->next=Node1;
+      Node1->previous=Node2_Last;
+      return Node1;
+      }
+   Optab * ConcatNode(Optab *Node1,Optab * Node2)
+      {
+      Optab * Node1_Last,*Node2_Last;
+      if(Node1==NULL)
+          return Node2;
+      if(Node2==NULL)
+          return Node1;
+      if(Node1->Operator==-1)
+          return Node2;
+      if(Node2->Operator==-1)
+          return Node1;
+      Node1_Last=Node1->previous;
+      Node2_Last=Node2->previous;
+      Node1_Last->next=Node2;
+      Node2->previous=Node1_Last;
+      Node2_Last->next=Node1;
+      Node1->previous=Node2_Last;
+      return Node1;
+      }
+  int GetResult(Optab* BlockStart)
+      {
+      Optab* Temp;
+      if(BlockStart->Operator==-1)
+          {
+          return BlockStart->Result;
+          }
+      if(BlockStart==BlockStart->next)
+          return BlockStart->Result;
+      Temp=BlockStart->previous;
+      return Temp->Result;
+      }
+ Optab * AddOperation(Optab * RESULT,int OPERATOR,Optab * OPERAND1,Optab * OPERAND2)
+        {
+         Optab* Temp;
+        current=MakeSimpleNode();
+        if(prog_start==NULL)
+            prog_start=current;
+        if(block_start==NULL)
+            {
+            block_start=current;
+            }
+        current->Result=GetResult(RESULT);
+        current->Operator=OPERATOR;
+        current->Operand1=GetResult(OPERAND1);
+        current->Operand2=GetResult(OPERAND2);
+        //Temp info storage start
+        strcpy(current->Result_c,GetSymbolName(current->Result));
+        strcpy(current->Operand1_c,GetSymbolName(current->Operand1));
+        strcpy(current->Operand2_c,GetSymbolName(current->Operand2));
+        strcpy(current->Operator_c,GetOperatorName(OPERATOR));
+        //temp info storgae end
+        
+        Temp=ConcatNode(OPERAND1,OPERAND2);
+        Temp=ConcatNode(Temp,current);
+        return Temp;
+        }
+         
+/*struct OPTAB * FindLastNode(OPTAB *first)
+    {
+    current=first;
+    while(current->next!=NULL)
+        current=current->next;
+    return current;
+    }*/
+Optab *GetLastNodeAddr(Optab *Block_Start)
+     {
+     Optab* LastNode;
+     LastNode=Block_Start->previous;
+     return LastNode;
+     }
+Optab* MakeElseIf(Optab *Condition ,Optab *Statement)
+    {
+    Optab *JUMP,*Temp;
+    JUMP=MakeSimpleNode();
+    JUMP->instr_addr=GetLastNodeAddr(Statement);
+    JUMP->Operator=GetOperatorId("JLT_JNXT"); 
+    Temp=ConcatNode(Condition,JUMP);
+    Temp=ConcatNode(Temp,Statement);
+    return Temp;
+    }
+Optab* MakeElseIfElse(Optab *Condition ,Optab *ElseIfStatement,Optab *ElseStatement)
+    {
+    Optab *JUMP1,*Temp,*JUMP2;
+     JUMP1=MakeSimpleNode();
+     JUMP1->Operator=GetOperatorId("JLT");
+     JUMP1->instr_addr=ElseStatement;
+     JUMP2=MakeSimpleNode();
+     JUMP2->Operator=GetOperatorId("JMP_JNXT");
+     Temp=ConcatNode(Condition,JUMP1);
+     Temp=ConcatNode(Temp,ElseIfStatement);
+     Temp=ConcatNode(Temp,JUMP2);
+     Temp=ConcatNode(Temp,ElseStatement);
+     return Temp;
+    }
+ Optab* MakeIfElseIf(Optab *Condition,Optab *Statement,Optab *IfElseIfStatement)
+    {
+    Optab *JUMP1,*JUMP2,*Temp;
+     JUMP1=MakeSimpleNode();
+     JUMP1->instr_addr=IfElseIfStatement;
+     JUMP1->Operator=GetOperatorId("JLT");
+     JUMP2=MakeSimpleNode();
+     
+     JUMP2->Operator=GetOperatorId("JMP_JNXT");
+     Temp=ConcatNode(Condition,JUMP1);
+     Temp=ConcatNode(Temp,Statement);
+     Temp=ConcatNode(Temp,JUMP2);
+     Temp=ConcatNode(Temp,IfElseIfStatement);
+     BackPatch(Temp,Temp->previous);
+     return Temp;
+    }
+ struct Optab* MakeElseIfElseIf(Optab *Condition,Optab *IfStatement,Optab* ElseIfStatement)
+    {
+     Optab *JUMP1,*JUMP2,*Temp;
+    JUMP1=MakeSimpleNode();
+    JUMP1->Operator=GetOperatorId("JLT");
+    JUMP1->instr_addr=ElseIfStatement;
+    JUMP2=MakeSimpleNode();
+    JUMP2->Operator=GetOperatorId("JMP_JNXT");
+    Temp=ConcatNode(Condition,JUMP1);
+    Temp=ConcatNode(Temp,IfStatement);
+    Temp=ConcatNode(Temp,JUMP2);
+    Temp=ConcatNode(Temp,ElseIfStatement);
+    return Temp;
+    }
+ int MakeAssignment(Optab* LHS ,Optab * RHS)
+     {
+     Optab *Result,*Operand2;
+     Operand2=MakeNode(-1);
+     Result=AddOperation(LHS,GetOperatorId("="),RHS,Operand2);
+     return Result;
+     }
+  Optab * MakeWhile(Optab *Condition ,Optab *Statement)
+     {
+     Optab *JUMP1,*Temp,*JUMP2;
+     
+     JUMP1=MakeSimpleNode();
+     JUMP2=MakeSimpleNode();
+     JUMP1->instr_addr=JUMP2;
+     JUMP1->Operator=GetOperatorId("JLT_JNXT");
+     JUMP2->instr_addr=Condition;
+     JUMP2->Operator=GetOperatorId("JMP");
+     Temp=ConcatNode(Condition,JUMP1);
+     Temp=ConcatNode(Temp,Statement);
+     Temp=ConcatNode(Temp,JUMP2);
+     BackPatchWhileLoop(Temp,GetLastNodeAddr(Temp),Temp);
+     return Temp;
+     }
+  Optab * MakeIfThen(Optab *Condition ,Optab *Statement)
+     {
+     Optab *JUMP,*Temp;
+     JUMP=MakeSimpleNode();
+     JUMP->instr_addr=GetLastNodeAddr(Statement);
+     JUMP->Operator=GetOperatorId("JLT_JNXT");
+     
+     Temp=ConcatNode(Condition,JUMP);
+     Temp=ConcatNode(Temp,Statement);
+     return Temp;
+     }
+   Optab* MakeStatementBlock(Optab * Statement1,Optab * Statement2)
+      {
+       Optab *Result;
+      Result=ConcatNode(Statement1,Statement2);
+      Last_Statement_Block=Result;
+      return Result;
+      }
+  Optab* MakeIfThenElse(Optab* Condition,Optab* TrueStatement,Optab * FalseStatement)
+      {
+      Optab* JUMP1,*JUMP2,*Temp;
+     JUMP1=MakeSimpleNode();
+     JUMP1->Operator=GetOperatorId("JLT");
+     JUMP1->instr_addr=FalseStatement;
+     JUMP2=MakeSimpleNode();
+     JUMP2->Operator=GetOperatorId("JMP_JNXT");
+     JUMP2->instr_addr=GetLastNodeAddr(FalseStatement);
+     Temp=ConcatNode(Condition,JUMP1);
+     Temp=ConcatNode(Temp,TrueStatement);
+     Temp=ConcatNode(Temp,JUMP2);
+     Temp=ConcatNode(Temp,FalseStatement);
+     return Temp;
+      }
+int GetOperatorId(char OPERATOR[LEN])
+    {
+    int i=0;
+    for(i=0;i<OperatorTabLen;i++)
+        {
+        if(strcmpi(OperatorTab[i],OPERATOR)==0)
+            return i;
+        }
+    }
+  Optab * MakeSingleExprSubscript(int Identifier,struct Optab * CurrentSubscriptExpr)
+      {
+       Optab * Temp,*Result,*TempResult;
+      char symbolAddr[20];
+      int SymTabPos;
+      strcpy(symbolAddr,"&");
+      strcat(symbolAddr,GetSymbolName(Identifier));
+      SymTabPos=AddSymbol(symbolAddr);
+      Temp=MakeNode(SymTabPos);
+      TempResult=GenerateTempVariable();
+      Result=AddOperation(TempResult,GetOperatorId("+"),Temp,CurrentSubscriptExpr);
+      
+      Temp=GetLastNodeAddr(Result);
+      Temp->ArrayIndex=Identifier;
+      Temp->SubscriptIndex=1;
+      return Result;
+      }
+  Optab*  GetCurrentDimension(int Identifier,int count)
+      {
+      Optab * Temp;
+      int Result,i;
+      Result=1;
+      Temp=GetDimension(Identifier);
+      for(i=0;i<count;i++)
+          {
+          Temp=Temp->next;
+          return Temp;
+          }
+      }
+  Optab * MakeExprSubscript(Optab * PreviousSubscriptExpr,Optab * CurrentSubscriptExpr)
+      {
+      int CurrentIndex,PreviousResult,counter,ArrayIndex,SymTabPos,ID_Address_Symtab;
+      char  CharTemp[20];
+
+      Optab* Temp1,*Temp2,*Temp,*TempResult2,*TempResult,*CurrentDimension,*ID_Address,*Result;
+
+      
+      
+      Temp1=GetLastNodeAddr(PreviousSubscriptExpr);
+      PreviousResult=Temp1->Operand2;
+      ID_Address_Symtab=Temp1->Operand1;
+      ID_Address=MakeNode(ID_Address_Symtab);
+      ArrayIndex=Temp1->ArrayIndex;
+      CurrentIndex=Temp1->SubscriptIndex+1;
+      CurrentDimension=GetCurrentDimension(ArrayIndex,CurrentIndex);
+      Temp1=DeleteNode(Temp1);
+      if(Temp1==NULL)
+          {
+          PreviousSubscriptExpr=MakeNode(PreviousResult);
+          }
+      SymTabPos=AddSymbol("1");
+      Temp=MakeNode(SymTabPos);
+      TempResult=GenerateTempVariable();
+      Result=AddOperation(TempResult,GetOperatorId("-"),PreviousSubscriptExpr,Temp);
+      TempResult=GenerateTempVariable();
+      Temp=AddOperation(TempResult,GetOperatorId("*"),Result,CurrentDimension);
+      TempResult=GenerateTempVariable();
+      Result=AddOperation(TempResult,GetOperatorId("+"),Temp,CurrentSubscriptExpr);
+      TempResult=GenerateTempVariable();
+      Temp=AddOperation(TempResult,GetOperatorId("+"),ID_Address,Result);
+          Temp1=GetLastNodeAddr(Temp);
+      Temp1->ArrayIndex=ArrayIndex;
+      Temp1->SubscriptIndex=CurrentIndex;
+      return Temp;
+      /*Result=GetRangeMultipliedID(ArrayIndex,CurrentIndex);
+      SymTabPos=AddSymbol(itoa(Result,CharTemp,10));
+      Temp1=MakeNode(SymTabPos);
+      Temp2=MakeNode(PreviousResult);
+      
+      TempResult=GenerateTempVariable();
+      Temp=AddOperation(TempResult,GetOperatorId("*"),CurrentSubscriptExpr,Temp1);
+      TempResult2=GenerateTempVariable();
+      TempResult=AddOperation(TempResult2,GetOperatorId("+"),Temp,Temp2);
+      Temp1=GetLastNodeAddr(TempResult);
+      Temp1->ArrayIndex=ArrayIndex;
+      Temp1->SubscriptIndex=CurrentIndex;
+      Temp=ConcatNode(PreviousSubscriptExpr,TempResult);
+      return Temp;
+      */
+
+      }
+  Optab* MakeFunctionCallSingleParam(int FunctionID, Optab* Parameter)
+      {
+      Optab * Operand2,*Result,*FunctionName,*FunctionResult,*TempResult;
+      char  FunctionResultName[20];
+      strcpy(FunctionResultName,"@Result.");
+      strcat(FunctionResultName,GetSymbolName(FunctionID));
+      Operand2=MakeNode(-1);
+      TempResult=MakeNode(AddSymbol(FunctionResultName));
+      FunctionName=MakeNode(FunctionID);
+      Result=AddOperation(Result,GetOperatorId("PUSH_FUN_PAR"),Parameter,Operand2);
+      FunctionResult=AddOperation(TempResult,GetOperatorId("CALL"),FunctionName,Operand2);
+      Result=ConcatNode(Result,FunctionResult);
+      return Result;
+      }
+  Optab* MakeFunctionCallAddParam(Optab *FirstExpression,  Optab * SecondExpression)
+      {
+      Optab * Operand2,*Result;
+      Operand2=MakeNode(-1);
+      Result=MakeNode(-1);
+      Result=AddOperation(Result,GetOperatorId("PUSH_FUN_PAR"),SecondExpression,Operand2);
+      Result=ConcatNode(FirstExpression,Result);
+      return Result;
+      }
+  Optab * MakeFunctionCallAddFirstParam(Optab *FirstParam)
+      {
+      Optab * Operand2,*Result;
+      Operand2=MakeNode(-1);
+      Result=MakeNode(-1);
+      Result=AddOperation(Result,GetOperatorId("PUSH_FUN_PAR"),FirstParam,Operand2);
+      return Result;
+      }
+  Optab* MakeFunctionCallMultipleParam(int FunctionID,Optab * Parameters,Optab *LastParameter)
+      {
+      Optab * Result,*FunctionResult,*FunctionName,*Operand2,*TempResult;
+      char  FunctionResultName[20];
+      Operand2=MakeNode(-1);
+      
+      strcpy(FunctionResultName,"@Result.");
+      strcat(FunctionResultName,GetSymbolName(FunctionID));
+      Result=MakeFunctionCallAddParam(Parameters,LastParameter);
+      FunctionName=MakeNode(FunctionID);
+      TempResult=MakeNode(AddSymbol(FunctionResultName));
+      FunctionResult=AddOperation(TempResult,GetOperatorId("CALL"),FunctionName,Operand2);
+      return ConcatNode(Result,FunctionResult);
+      }
+  /*struct OPTAB * MakeFunctionCall(int Identifier,struct Optab *Parameters)
+      {
+      struct Optab * Operand2,*Result,*FunctionName;
+      
+      Operand2=MakeNode(-1);
+      Result=MakeNode(-1);
+      FunctionName=MakeNode(Identifier);
+
+      Result=MakeNode(-1);
+
+      Result=AddOperation(Result,GetOperatorId("CALL"),FunctionName,Operand2);
+      return ConcatNode(Parameters,Result);
+      }
+ */
+
+#endif

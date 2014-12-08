@@ -1,0 +1,52 @@
+Import SegmentDescr
+Import InterruptSegmentDescr
+Define Worker WorkerManager
+Segment segments[5];
+Task start()
+{
+segments[0].init();
+segments[1].init();
+int8 bTrue,bFalse;
+bTrue=1;
+bFalse=0;
+int32 iLimit;
+Pointer pBaseAddress;
+iLimit=99999;
+segments[1].SetAsCodeSegment(bTrue,bTrue);
+segments[1].setLimit(iLimit);
+segments[1].setSegmentPresent(bTrue);
+segments[1].setGranularity(bTrue);
+segments[1].setDescriptorType(bTrue);
+segments[1].set32bitOperandSize(bTrue);
+pBaseAddress=0;
+segments[1].setBaseAddress(pBaseAddress);
+segments[2].init();
+segments[2].SetAsDataSegment(bTrue,bTrue);
+segments[2].setSegmentPresent(bTrue);
+segments[2].setGranularity(bTrue);
+segments[2].setDescriptorType(bTrue);
+segments[2].setPrivilegeLevel(bTrue);
+
+pBaseAddress=753664;
+segments[2].setBaseAddress(pBaseAddress);
+SegmentDescrReg sd;
+Pointer pSegmentBase;
+pSegmentBase=&segments;
+sd.m_Length=32;
+sd.m_BaseAddress=pSegmentBase;
+__asm{
+mov eax,&sd
+lgdt [eax]
+mov eax, cr0
+or eax, 1
+mov cr0, eax
+jmp 8:clear_pipe
+[BITS 32]
+clear_pipe:
+mov ax,16
+mov ds,ax
+mov eax,0x0
+mov byte[ds:eax],'a'
+}
+}
+EndDefine

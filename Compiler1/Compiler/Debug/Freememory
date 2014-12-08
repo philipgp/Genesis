@@ -1,0 +1,36 @@
+struct MemoryBlock
+{
+Pointer  m_LpAddress;
+int32 m_iSize;
+}
+Define ObjectType  FreeMemoryTable
+MemoryBlock m_availMemory[10];
+int16 m_iCount;
+Function init()
+{
+m_iCount=0;
+}
+Function AddNewEntry(Pointer LpAddress,int32 iSize)
+{
+m_availMemory[m_iCount].m_LpAddress=LpAddress;
+m_availMemory[m_iCount].m_iSize=iSize;
+m_iCount=m_iCount+1;
+}
+Function getMemory(int32 iSize)returns  MemoryBlock
+{
+int16 index;
+int32 curSize;
+index=0;
+while(index<=m_iCount)
+Loop
+curSize=m_availMemory[index].m_iSize;
+if(curSize>iSize) Then
+return m_availMemory[index];
+EndIf
+index=index+1;
+EndLoop
+MemoryBlock emptyBlock;
+emptyBlock.m_iSize=0;
+emptyBlock.m_LpAddress=0;
+}
+EndDefine

@@ -1,0 +1,198 @@
+Define ObjectType String
+Pointer m_szStringData;
+int16 m_iLength,m_iCapacity;
+Function init()
+{
+m_iLength=0;
+m_szStringData=0;
+}
+Function getDataPointer()returns Pointer
+{
+return m_szStringData;
+}
+Function SetLength(int16 iLen)
+{
+m_szStringData=heap.AllocateMemory(iLen);
+}
+Function copyBytes(Pointer LpszDestPointer,Pointer charPointer,int16 length)
+{
+%LockRegister(ESI);
+%LockRegister(EDI);
+__asm{
+mov ESI,@charPointer
+mov EDI,@LpszDestPointer
+mov CX,@length
+movzx ECX,cx
+L: mov byte ah,[ESI]
+mov byte[EDI],ah
+inc ESI
+inc EDI
+LOOP L
+}
+%UnLockRegister(ESI);
+%UnLockRegister(EDI);
+}
+Function IsEqualTo(String st) returns int8
+{
+Pointer destCharpointer;
+int8 bFlag;
+int16 srcLen,destLen;
+srcLen=m_iLength;
+destLen=st.m_iLength;
+if(srcLen!=destLen) Then
+bFlag=0;
+return bFlag;
+EndIf
+destCharpointer=st.m_szStringData;
+%LockRegister(ESI);
+%LockRegister(EDI);
+%LockRegister(ECX);
+%LockRegister(EDX);
+__asm{
+mov esi,@m_szStringData
+movzx ecx,@m_iLength
+mov edi,@destCharpointer
+COMPLOOP: mov byte dl,[esi]
+mov byte dh,[edi]
+cmp dh,dl
+jne NOTEQUAL
+inc esi
+inc edi
+LOOP COMPLOOP
+EQUAL:
+mov dl,0x1
+jmp DONE
+NOTEQUAL: 
+mov dl,0x0
+DONE: mov @bFlag,dl
+}
+%UnLockRegister(ESI);
+%UnLockRegister(ECX);
+%UnLockRegister(EDX);
+%UnLockRegister(EDI);
+return bFlag;
+}
+
+
+Function ConcatInteger(int32 intValue)
+{
+int16 isrcLength,iresultLength;
+Pointer LpszSource,LpszOriginal,LpTarget;
+isrcLength=10;
+iresultLength=isrcLength+m_iLength;
+LpszOriginal=m_szStringData;
+m_szStringData=heap.AllocateMemory(iresultLength); 
+if(LpszOriginal!=0) Then
+copyBytes(m_szStringData,LpszOriginal,m_iLength);
+EndIf
+LpTarget=m_szStringData+m_iLength;
+%LockRegister(ESI);
+%LockRegister(ECX);
+%LockRegister(EDX);
+%LockRegister(EDI);
+__asm{
+xor edi,edi
+mov  edi,@LpTarget
+mov eax,@intValue
+mov ecx,1000000000
+mov edx,0x0
+cmp eax,0x7FFFFFFF
+jb conv_loop_int
+mov byte [edi],'-'
+inc edi
+neg eax
+conv_loop_int:
+cmp eax,0x0
+je divAndADD_int
+cmp  eax,ecx
+jge divAndADD_int
+idiv  ecx
+jmp skip_add_int
+divAndADD_int:idiv  ecx
+add al,48
+mov byte [edi],al
+inc edi
+skip_add_int:mov esi,edx
+mov eax,ecx
+mov edx,0x0
+mov  ecx,10
+div ecx
+cmp eax,0x0
+jz stop_int
+mov ecx,eax
+mov eax,esi
+mov edx,0x0
+jmp conv_loop_int
+stop_int:
+mov eax,esi
+mov byte [edi],al
+inc edi
+mov esi,@m_szStringData
+sub edi,esi
+mov @m_iLength,di
+}
+%UnLockRegister(ESI);
+%UnLockRegister(ECX);
+%UnLockRegister(EDX);
+%UnLockRegister(EDI);
+}
+Function SetString(Pointer charPointer,int16 length)
+{
+if(charPointer == 0) Then
+m_szStringData=0;
+m_iLength=0;
+return ;
+EndIf
+m_szStringData=heap.AllocateMemory(length);
+copyBytes(m_szStringData,charPointer,length);
+m_iLength=length;
+}
+Function CopyString(String st)
+{
+int16 iLength;
+Pointer LpszSource;
+iLength=st.m_iLength;
+LpszSource=st.m_szStringData;
+m_szStringData=heap.AllocateMemory(iLength);
+copyBytes(m_szStringData,LpszSource,iLength);
+m_iLength=iLength;
+}
+Function ConcatString(String st)
+{
+int16 isrcLength,iresultLength;
+Pointer LpszSource,LpszOriginal,LpTarget;
+isrcLength=st.m_iLength;
+LpszSource=st.m_szStringData;
+iresultLength=isrcLength+m_iLength;
+LpszOriginal=m_szStringData;
+m_szStringData=heap.AllocateMemory(iresultLength+1); 
+if(LpszOriginal!=0) Then
+copyBytes(m_szStringData,LpszOriginal,m_iLength);
+EndIf
+LpTarget=m_szStringData+m_iLength;
+if(LpszSource!=0) Then
+copyBytes(LpTarget,LpszSource,isrcLength);
+EndIf
+m_iLength=iresultLength;
+}
+Function ConcatByteArray(Pointer bytePointer,int16 length)
+{
+int16 isrcLength,iresultLength;
+Pointer LpszOriginal,LpTarget;
+iresultLength=length+m_iLength;
+LpszOriginal=m_szStringData;
+m_szStringData=heap.AllocateMemory(iresultLength+1); 
+if(LpszOriginal!=0) Then
+copyBytes(m_szStringData,LpszOriginal,m_iLength);
+EndIf
+LpTarget=m_szStringData+m_iLength;
+if(bytePointer!=0) Then
+copyBytes(LpTarget,bytePointer,length);
+EndIf
+m_iLength=iresultLength;
+}
+Function getLength() Returns int16
+{
+return m_iLength;
+}
+EndDefine

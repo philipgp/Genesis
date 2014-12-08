@@ -1,0 +1,74 @@
+struct SChannelInfo
+{
+int8 m_iStatus;/*0idle1busy2newdata*/
+int16 m_iLength;
+Pointer m_LpData;
+int16 m_iCapacity;
+}
+Define ObjectType COM 
+Pointer m_LpRcvBuf,m_LpSendBuf;
+Function InitChannel(Pointer LpChannel,int16 iCapacity)
+{
+SChannelInfo channelInfo;
+channelInfo.m_iLength=0;
+channelInfo.m_iCapacity = iCapacity - 9;
+channelInfo.m_iStatus = 0;
+Pointer dataPointer;
+dataPointer=LpChannel+10;
+channelInfo.m_LpData=dataPointer;
+@(SChannelInfo)LpChannel= channelInfo;
+}
+Function init()
+{
+m_LpSendBuf=heap.AllocateMemory(25); 
+InitChannel(m_LpSendBuf,16);
+m_LpRcvBuf = m_LpSendBuf;
+}
+Function GetData() returns String
+{
+SChannelInfo rcvChannel;
+String data;
+Pointer srcData;
+int16 srcLength;
+rcvChannel=@(SChannelInfo)m_LpRcvBuf;
+srcLength = rcvChannel.m_iLength;
+srcData=rcvChannel.m_LpData;
+data.SetString(srcData,srcLength);
+return data;
+}
+Function SendData(String data)
+{
+Pointer srcPointer,destPointer;
+SChannelInfo sendChannel;
+srcPointer=data.getDataPointer();
+int16 srcLength,destCapacity;
+int8 channelStatus;
+srcLength=data.getLength();
+sendChannel=@(SChannelInfo)m_LpSendBuf;
+destPointer = sendChannel.m_LpData;
+destCapacity = sendChannel.m_iCapacity;
+channelStatus = sendChannel.m_iStatus;
+if ((destCapacity<srcLength)||(channelStatus!=0)) Then
+return ;
+Endif
+sendChannel.m_iStatus=1;
+%LockRegister(ESI);
+%LockRegister(EDI);
+__asm{
+mov ESI,@srcPointer
+mov EDI,@destPointer
+mov CX,@srcLength
+movzx ECX,cx
+.L: mov byte ah,[ESI]
+mov byte[EDI],ah
+inc ESI
+inc EDI
+LOOP .L
+}
+%UnLockRegister(ESI);
+%UnLockRegister(EDI);
+sendChannel.m_iStatus=2;
+sendChannel.m_iLength=srcLength;
+@(SChannelInfo)m_LpSendBuf = sendChannel;
+}
+EndDefine

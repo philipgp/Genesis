@@ -1,0 +1,12 @@
+Define Worker commgr
+Task start()
+{
+int8 i;
+i=9;
+}
+Task GetSome()
+{
+int16 i;
+i=12;
+}
+EndDefine

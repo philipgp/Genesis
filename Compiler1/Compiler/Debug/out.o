@@ -1,0 +1,165 @@
+org 0x7C00
+xor ax, ax
+mov ds, ax
+mov ss, ax 
+mov es,ax
+mov EBP,Data
+add EBP,100
+mov ESP,EBP
+ mov EBX,ObjectData
+jmp KeyBoard_start
+KeyBoard_init:
+sub ESP,0xa
+mov byte ah,0x0
+mov byte [EBX+0x1],ah
+mov ECX,EBX
+add ECX,0x2
+mov dword EAX,ECX
+add EAX,0x10
+mov dword [EBP-0x6],EAX
+mov byte ah,0x71
+mov dword ECX,[EBP-0x6]
+mov byte [ECX],ah
+mov ECX,EBX
+add ECX,0x2
+mov dword EAX,ECX
+add EAX,0x90
+mov dword [EBP-0xa],EAX
+mov byte ah,0x71
+mov dword ECX,[EBP-0xa]
+mov byte [ECX],ah
+Epilogue_KeyBoard_init:
+add ESP,0xa
+
+ret 
+KeyBoard_HandleInput:
+cli
+pushad
+mov dword EAX,ESP
+mov dword EBX,EBP
+mov EBP,ISR
+add EBP,80
+mov ESP,EBP
+push EAX
+push EBX
+sub EBP,0x9
+mov ESP,EBP
+mov EBX,ObjectData
+sub ESP,0xe
+spin:
+in  al, 0x64
+and al, 0x01
+jz  spin
+in al,0x60
+mov ECX,EBP
+sub ECX,0x1
+mov dword ECX,ECX
+mov byte [ECX],al
+mov byte ah,[EBP-0x1]
+cmp ah,0x2a
+je LABEL0
+mov byte ah,0x0
+mov byte [EBP-0x3],ah
+jmp LABEL3
+LABEL0: mov byte ah,0x1
+mov byte [EBP-0x3],ah
+LABEL3: cmp ah,0x1
+jne LABEL4
+mov byte ah,0x1
+mov byte [EBX+0x1],ah
+jmp LABEL5
+LABEL4: mov byte ah,[EBP-0x1]
+cmp ah,0xaa
+je LABEL1
+mov byte ah,0x0
+mov byte [EBP-0x4],ah
+jmp LABEL6
+LABEL1: mov byte ah,0x1
+mov byte [EBP-0x4],ah
+LABEL6: cmp ah,0x1
+jne LABEL7
+mov byte ah,0x0
+mov byte [EBX+0x1],ah
+jmp LABEL5
+LABEL7: mov byte ah,[EBP-0x1]
+movzx ECX,ah
+mov dword [EBP-0xc],ECX
+mov EDX,EBX
+add EDX,0x2
+mov dword ECX,EDX
+mov dword EDX,[EBP-0xc]
+add ECX,EDX
+mov dword [EBP-0x8],ECX
+mov ECX,EBX
+add ECX,0x0
+mov dword EDI,ECX
+mov dword ECX,[EBP-0x8]
+mov dword ESI,ECX
+mov byte ah,[ESI]
+ mov byte [EDI],ah 
+mov byte al,[EBX+0x1]
+cmp al,0x1
+je LABEL2
+mov byte al,0x0
+mov byte [EBP-0xd],al
+jmp LABEL8
+LABEL2: mov byte al,0x1
+mov byte [EBP-0xd],al
+LABEL8: cmp al,0x1
+jne LABEL9
+mov byte al,[EBX+0x0]
+sub al,0x20
+mov byte [EBP-0xe],al
+mov byte [EBX+0x0],al
+LABEL9: mov byte ah,0x2
+mov byte [EBP-0x2],ah
+mov byte al,[EBX+0x0]
+pusha
+mov ah,0x0E
+int 0x10
+popa
+LABEL5: mov byte ah,0x2
+mov byte [EBP-0x2],ah
+mov al, 0x20
+out 0x20, al
+Epilogue_HandleInput:
+add ESP,0xe
+add EBP,0x9
+inc ESP
+pop EBP
+pop ESP
+popad
+
+sti
+iret
+KeyBoard_start:
+sub ESP,0x1
+add EDI,0x1
+sub EDI,0x0
+push EBP
+ mov EBP,ESP
+ sub EBP,0x4
+call KeyBoard_init
+pop EBP
+mov EAX,EBP
+sub EAX,0x0
+mov dword EDI,EAX
+mov dword ESI,EAX
+cli
+mov word[es:(9*4)], KeyBoard_HandleInput
+mov word[es:(9*4)+2], 0
+sti
+jmp $
+mov byte ah,0x43
+mov byte [EBP-0x1],ah
+Epilogue_KeyBoard_start:
+add ESP,0x1
+
+ret 
+Data resb 100
+times 510-($-$$) db 0
+db 0x55
+db 0xAA
+ISR resb 100
+ ObjectData resb 300
+times 1024-($-$$) db 0

@@ -1,0 +1,29 @@
+struct SChannelStatus
+{
+int8 m_bChannelBusy;
+int16 m_iDataLength;
+}
+Define ObjectType COM
+Pointer m_LpRcvBuf,m_LpSendBuf;
+Function MakeChannel()
+{
+Pointer LpBuffer;
+int16 size;
+size=20;
+LpBuffer=heap.AllocateMemory(size);
+SChannelStatus cs;
+cs.m_bChannelBusy=1;
+cs.m_iDataLength=size;
+(SChannelStatus)LpBuffer=cs;
+m_LpRcvBuf=LpBuffer;
+}
+Function PrintStatus()
+{
+int8 bBusy;
+bBusy=0;
+SChannelStatus cs2;
+cs2=(SChannelStatus)m_LpRcvBuf;
+bBusy=cs2.m_bChannelBusy;
+print_int_win(bBusy);
+}
+EndDefine

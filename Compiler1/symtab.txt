@@ -1,0 +1,31 @@
+
+/*void initDataTypeTable();
+int VariableIsStruct(Optab * Current);
+int DataTypeIsStruct(int iDataType);
+void AddDataType(char * LpszDataTypeName,int iDataTypeSize,Optab *LpMembers);
+int AddFunctionTable(int RtrnType,char *FuncName,Optab * Parameters);
+Optab* AddAsm(char *ASM);
+int SearchFunctionTable(char *FuncName);
+int GetDataType(int SymTabPos);
+void SetDataType(int SymTabPos,int Datatype);
+Optab * GetDimension(int SymTabPos);
+int GetDataTypeSize(int Pos);
+int CalculateDataTypeSize(Optab *LpMembers);
+void SetDimension(int SymTabPos,Optab * DimenSion);
+int GetSymTabPos(char *LpszIdentifier);
+char * GetDataTypeName(int DatatypeId);
+int CalculateMemberOffset(char *LpszParent,char *LpszMember);
+Optab* ProcessMemberCall(char *LpszIdentifier);
+int IsMemberCall(char *LpszIdentifier);
+void DisplaySymTab();
+int SearchDataTypeTable(char *Datatype);
+int SearchKWTable(char *ID1);
+int AddSymbol(char *SYMBOL);
+void SetStorage(int iSymId,int iStorageType);
+Optab* GenerateTempVariable();
+char * GetSymbolName(int SYMID);
+void AssignLabel(Optab* Current,Optab * Target);
+int ProcessJumpStatement(Optab *current);
+void DisplayFunctionTable();
+void DisplayOptab();
+*/

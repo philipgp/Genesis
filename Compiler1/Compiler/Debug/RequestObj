@@ -1,0 +1,85 @@
+Define ObjectType Request
+String RequestBuffer;
+
+Function AddKeyValue(String Key,String Value)
+{
+Pointer bytePointer;
+int32 valueLen,keyLen;
+keyLen=Key.getLength();
+bytePointer=&keyLen;
+RequestBuffer.ConcatByteArray(bytePointer,4);
+RequestBuffer.ConcatString(Key);
+valueLen=Value.getLength();
+bytePointer=&valueLen;
+RequestBuffer.ConcatByteArray(bytePointer,4);
+RequestBuffer.ConcatString(Value);
+
+}
+Function getStringValue(String Key) returns String
+{
+String Value;
+Pointer keyPointer,valuePointer,requestPointer;
+keyPointer=Key.getDataPointer();
+int16 valueLen;
+valuePointer=0;
+valueLen=0;
+requestPointer=RequestBuffer.getDataPointer();
+int32 requestLen;
+
+int32 keyLen;
+int8 bFoundFlag;
+keyLen=Key.getLength();
+requestLen=RequestBuffer.getLength();
+Pointer LpLastPosition;
+LpLastPosition=requestPointer+requestLen;
+%LockRegister(ESI);
+%LockRegister(EDI);
+%LockRegister(ECX);
+%LockRegister(EDX);
+__asm{
+mov edi,@keyPointer
+mov esi,@requestPointer
+compLength:mov dword ecx,[esi]
+mov dword edx,@keyLen
+add esi,0x4
+cmp dword ecx,edx
+jne SkipKeyAndValue
+innerCompare: mov byte dh,[edi]
+mov byte dl,[esi]
+cmp dh,dl
+jne SkipKeyAndValue
+dec ecx
+cmp  ecx,0x0
+je KeyFound
+inc esi
+inc edi
+jmp innerCompare
+SkipKeyAndValue: 
+add esi,ecx
+add esi,[esi]
+add esi,0x4
+mov edi,@keyPointer
+mov  edx,@LpLastPosition
+cmp esi,edx
+je KeyNotFound
+jmp compLength
+KeyFound:mov cl,0x1
+mov @bFoundFlag,cl
+inc  esi
+mov dword ecx,[esi]
+mov @valueLen,cx
+add esi,0x4
+mov @valuePointer,esi
+jmp keyDONE
+KeyNotFound: mov cl,0x0
+mov @bFoundFlag,cl
+keyDONE:xor ax,ax 
+}
+%UnLockRegister(ESI);
+%UnLockRegister(EDI);
+%UnLockRegister(ECX);
+%UnLockRegister(EDX);
+Value.SetString(valuePointer,valueLen);
+return Value;
+}
+EndDefine

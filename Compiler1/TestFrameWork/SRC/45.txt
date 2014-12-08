@@ -1,0 +1,15 @@
+Define ObjectType Obj1
+Function start()
+{
+uint8 k,m;
+k=6;
+m=9;
+if(k>8) Then
+fprint_int_win(k);
+ElseIf(k==6) Then
+m=9;
+fprint_int_win(m);
+EndIf
+k=7;
+}
+EndDefine

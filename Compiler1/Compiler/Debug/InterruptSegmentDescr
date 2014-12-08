@@ -1,0 +1,69 @@
+Define ObjectType InterruptSegment
+int16 m_Offset0_15;
+int16 m_Selector0_15;
+int8 m_ZeroByte;
+int8 m_Flags;
+int16 m_Offset16_31;
+Function init()
+{
+m_Offset0_15=0;
+m_Selector0_15=0;
+m_ZeroByte=0;
+m_Flags=14;
+m_Offset16_31=0;
+}
+Function setSegmentPresent(int8 bPresent)
+{
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+mov  dh,@bPresent
+shl dh,7
+and dl,0x7f
+or dl,dh
+mov @m_Flags,dl
+}
+%UnLockRegister(EDX);
+}
+Function setPrivilegeLevel(int8 iPrivilege)
+{
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+mov  dh,@iPrivilege
+shl dh,5
+and dl,0x9f
+or dl,dh
+mov @m_Flags,dl
+}
+%UnLockRegister(EDX);
+}
+Function setSelector(int16 Selector)
+{
+m_Selector0_15=Selector;
+}
+Function setOffsetAddress(Pointer LpOffsetAddress)
+{
+%LockRegister(EDX);
+__asm{
+mov EDX,@LpOffsetAddress
+mov @m_Offset0_15,dx
+shr edx,16
+mov @m_Offset16_31,dx
+}
+%UnLockRegister(EDX);
+}
+Function getOffsetAddress() returns Pointer
+{
+Pointer LpOffsetAddress;
+%LockRegister(EDX);
+__asm{
+mov dx,@m_Offset16_31
+shl edx,15
+mov  dx,@m_Offset0_15
+mov  @LpOffsetAddress,edx
+}
+%UnLockRegister(EDX);
+return LpOffsetAddress;
+}
+EndDefine

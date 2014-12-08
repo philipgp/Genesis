@@ -1,0 +1,13 @@
+struct SFreeMemW
+{
+int32 m_iSize;
+Pointer m_startAddress;
+}
+Define ObjectType  FreeMemoryTable2
+int8 m_iCount;
+Function init()
+{
+int8 i;
+i=0;
+}
+EndDefine

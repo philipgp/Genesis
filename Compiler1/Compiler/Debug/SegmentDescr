@@ -1,0 +1,238 @@
+Define Datatype SegmentType
+{
+int8 m_Type,m_Bit1,m_Bit2,m_bSystemDescr,m_PrivilegeLevel;
+int8 m_bSegmentPresent;
+}
+Define Datatype SegmentDescrReg
+{
+int16 m_Length;
+Pointer m_BaseAddress;
+}
+Define ObjectType Segment
+int16  m_Limit0_15;
+int16  m_Base0_15;
+int8   m_Base16_23;
+int8   m_Flags;
+int8   m_AccessAndLimit16_20;
+int8   m_Base24_31;
+Function init()
+{
+m_Limit0_15=0;
+m_Base0_15=0;
+m_Base16_23=0;
+m_Flags=0;
+m_AccessAndLimit16_20=0;
+m_Base24_31=0;
+}
+Function setSegmentPresent(int8 bPresent)
+{
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+mov  dh,@bPresent
+shl dh,7
+and dl,0x7f
+or dl,dh
+mov @m_Flags,dl
+}
+%UnLockRegister(EDX);
+}
+
+Function getSegmentType() Returns SegmentType
+{
+int8 Type,Bit1,Bit2,bSystemDescr,iPrivilege,bSegmentPresent;
+SegmentType st;
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+shr dl,1
+mov dh,dl
+and dh,0x01
+mov @Bit2,dh
+shr dl,1
+mov dh,dl
+and dh,0x01
+mov @Bit1,dh
+shr dl,1
+mov dh,dl
+and dh,0x01
+mov @Type,dh
+shr dl,1
+mov dh,dl
+and dh,0x01
+mov @bSystemDescr,dh
+shr dl,1
+mov dh,dl
+and dh,0x03
+mov @iPrivilege,dh
+shr dl,2
+mov dh,dl
+and dh,0x01
+mov @bSegmentPresent,dh
+}
+%UnLockRegister(EDX);
+st.m_Type=Type;
+st.m_Bit1=Bit1;
+st.m_Bit2=Bit2;
+st.m_bSystemDescr=bSystemDescr;
+st.m_PrivilegeLevel=iPrivilege;
+st.m_bSegmentPresent=bSegmentPresent;
+return  st;
+}
+Function setDescriptorType(int8 iType)
+{
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+mov  dh,@iType
+shl dh,4
+and dl,0xef
+or dl,dh
+mov @m_Flags,dl
+}
+%UnLockRegister(EDX);
+}
+Function setGranularity(int8 iType)
+{
+%LockRegister(EDX);
+%LockRegister(cl);
+__asm{
+mov cl,@m_AccessAndLimit16_20
+mov  dh,@iType
+shl dh,7
+and cl,0x7f
+or cl,dh
+mov @m_AccessAndLimit16_20,cl
+}
+%LockRegister(cl);
+%UnLockRegister(EDX);
+}
+Function set32bitOperandSize(int8 bFlag)
+{
+%LockRegister(EDX);
+%LockRegister(cl);
+__asm{
+mov cl,@m_AccessAndLimit16_20
+mov  dh,@bFlag
+shl dh,6
+and cl,0xbf
+or cl,dh
+mov @m_AccessAndLimit16_20,cl
+}
+%LockRegister(cl);
+%UnLockRegister(EDX);
+}
+Function setPrivilegeLevel(int8 iPrivilege)
+{
+%LockRegister(EDX);
+__asm{
+mov dl,@m_Flags
+mov  dh,@iPrivilege
+shl dh,5
+and dl,0x9f
+or dl,dh
+mov @m_Flags,dl
+}
+%UnLockRegister(EDX);
+}
+
+Function SetAsCodeSegment(int8 bConfirming,int8 bReadable)
+{
+%LockRegister(EDX);
+%LockRegister(cl);
+__asm{
+mov dl,0x08
+mov cl,@bConfirming
+shl cl,2
+or dl,cl;
+mov cl,@bReadable
+shl cl,1
+or dl,cl;
+mov dh,@m_Flags
+and dh,0xF1
+or dh,dl
+mov @m_Flags,dh
+}
+%UnLockRegister(EDX);
+%UnLockRegister(cl);
+}
+Function SetAsDataSegment(int8 Expansion,int8 bWritable)
+{
+%LockRegister(EDX);
+%LockRegister(cl);
+__asm{
+mov dl,0x00
+mov cl,@Expansion
+shl cl,2
+or dl,cl;
+mov cl,@bWritable
+shl cl,1
+or dl,cl;
+mov dh,@m_Flags
+and dh,0xF1
+or dh,dl
+mov @m_Flags,dh
+}
+%UnLockRegister(EDX);
+%UnLockRegister(cl);
+}
+Function setLimit(int32 iLimit)
+{
+int8 iLimit16_20;
+%LockRegister(EDX);
+__asm{
+mov EDX,@iLimit
+mov @m_Limit0_15,dx
+shr EDX,16
+and dl,0x0F
+mov @iLimit16_20,dl
+mov dh,@m_AccessAndLimit16_20
+or dh,dl
+mov @m_AccessAndLimit16_20,dh
+}
+%UnLockRegister(EDX);
+}
+Function getLimit() Returns int32
+{
+int32 iLimit;
+%LockRegister(EDX);
+__asm{
+xor EDX,EDX
+mov dh,@m_AccessAndLimit16_20
+and dh,0x0F
+shl EDX,4
+xor dx,dx
+mov dx,@m_Limit0_15
+mov @iLimit,EDX
+}
+%UnLockRegister(EDX);
+return iLimit;
+}
+Function setBaseAddress(Pointer baseAddress)
+{
+%LockRegister(EDX);
+__asm{
+mov EDX,@baseAddress
+mov @m_Base0_15,dx
+shr EDX,16
+mov @m_Base16_23,dl
+mov @m_Base24_31,dh
+}
+%UnLockRegister(EDX);
+}
+Function getBaseAddress() Returns Pointer
+{
+Pointer  baseAddress;
+%LockRegister(EDX);
+__asm{
+xor EDX,EDX
+mov dh,@m_Base24_31
+mov dl,@m_Base16_23
+shl EDX,16
+mov dx,@m_Base0_15
+mov @baseAddress,EDX
+}
+%UnLockRegister(EDX);
+return baseAddress;
+}
+EndDefine

@@ -1,0 +1,11 @@
+Define ObjectType Obj1
+Function start()
+{
+int8 k;
+k=8;
+if(k==8) Then
+fprint_int_win(k);
+EndIf
+k=7;
+}
+EndDefine

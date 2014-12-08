@@ -1,0 +1,114 @@
+Import SegmentDescr
+Import InterruptSegmentDescr
+Define Worker WorkerManager
+Segment segments[5];
+InterruptSegment  is[13];
+Task start()
+{
+int32 iLimit;
+Pointer pBaseAddress;
+int8 bTrue,bFalse;
+bTrue=1;
+bFalse=0;
+
+iLimit=99999;
+segments[0].init();
+segments[1].init();
+segments[1].SetAsCodeSegment(bTrue,bTrue);
+segments[1].setLimit(iLimit);
+segments[1].setSegmentPresent(bTrue);
+segments[1].setGranularity(bTrue);
+segments[1].setDescriptorType(bTrue);
+segments[1].set32bitOperandSize(bTrue);
+pBaseAddress=0;
+segments[1].setBaseAddress(pBaseAddress);
+
+segments[2].init(); /*videomem*/
+segments[2].SetAsDataSegment(bTrue,bTrue);
+segments[2].setSegmentPresent(bTrue);
+segments[2].setGranularity(bFalse);
+segments[2].setDescriptorType(bTrue);
+segments[2].setPrivilegeLevel(bTrue);
+segments[2].setLimit(iLimit);
+pBaseAddress=753664;
+segments[2].setBaseAddress(pBaseAddress);
+
+pBaseAddress=0;
+segments[3].init();
+segments[3].SetAsDataSegment(bFalse,bTrue);
+segments[3].setSegmentPresent(bTrue);
+segments[3].setGranularity(bFalse);
+segments[3].setDescriptorType(bTrue);
+segments[3].setPrivilegeLevel(bTrue);
+segments[3].setBaseAddress(pBaseAddress);
+segments[3].setLimit(iLimit);
+
+SegmentDescrReg sd;
+Pointer pSegmentBase;
+pSegmentBase=&segments;
+sd.m_Length=32;
+sd.m_BaseAddress=pSegmentBase;
+
+SegmentDescrReg sd2;
+pSegmentBase=&is;
+int16 iSelector;
+iSelector=8;
+is[3].init();
+is[3].setSegmentPresent(bTrue);
+is[3].setSelector(iSelector);
+__asm{
+xchg bx,bx
+mov ECX,isr
+mov @pBaseAddress,ECX
+}
+is[3].setOffsetAddress(pBaseAddress);
+int8 index;
+Pointer pIVTable;
+int16 wordAddress;
+Pointer pInterruptBase;
+pIVTable=0;
+index=0;
+sd2.m_Length=256;
+sd2.m_BaseAddress=pSegmentBase;
+__asm{
+
+mov ECX,isr
+mov @pBaseAddress,ECX
+cli
+mov eax,&sd
+lgdt [eax]
+mov eax,&sd2
+lidt [eax]
+mov eax, cr0
+or eax, 1
+mov cr0, eax
+jmp 8:clear_pipe
+[BITS 32]
+clear_pipe:
+mov ax,0x18
+mov ds,ax
+mov ax,0x10
+mov es,ax
+mov eax,0x2
+mov byte[es:eax],'d'
+}
+
+index=2;
+
+__asm{
+xchg bx,bx
+jmp isr_done
+isr:pusha
+cli
+mov ecx,0x20
+mov byte [es:ecx],'f'
+popa
+sti
+iret
+isr_done:
+sti
+
+}
+
+}
+EndDefine

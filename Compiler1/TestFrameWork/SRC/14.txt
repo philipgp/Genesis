@@ -1,0 +1,11 @@
+Define ObjectType Obj1
+Function start()
+{
+int8 i,j,k,l;
+i=5;
+j=4;
+k=5;
+l=j*k*i;
+fprint_int_win(l);
+}
+EndDefine
